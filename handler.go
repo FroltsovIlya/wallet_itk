@@ -5,10 +5,10 @@ import (
 )
 
 type Handler struct {
-	storage *Storage
+	storage StorageInterface
 }
 
-func NewHandler(s *Storage) *Handler {
+func NewHandler(s StorageInterface) *Handler {
 	return &Handler{storage: s}
 }
 

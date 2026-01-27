@@ -13,6 +13,12 @@ type Storage struct {
 	db *sql.DB
 }
 
+type StorageInterface interface {
+	Get(id string) (*Wallet, error)
+	Deposit(id string, amount int64) (*Wallet, error)
+	Withdraw(id string, amount int64) (*Wallet, error)
+}
+
 func NewStorage(db *sql.DB) *Storage {
 	return &Storage{db: db}
 }
