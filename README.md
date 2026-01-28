@@ -1,5 +1,7 @@
 To start the project download, then use
+
 docker compose up --build
+
 then you can use 
 
 curl http://localhost:8082/api/v1/wallets/a
@@ -11,8 +13,15 @@ http://localhost:8082/api/v1/wallets/c
 )
 
 you can use the tests. Use it in local or on Docker 
+
 go test ./... -v
+
+.
+
+
 -v if you want to see messages not only result
+
+.
 
 in app alse exists POST method. to use it:
 
