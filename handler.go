@@ -6,48 +6,48 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var walletCache sync.Map
+var walletCache sync.Map //cache storage for stabilisation requests
 
-type Handler struct {
-	storage StorageInterface
+type Handler struct {		
+	storage StorageInterface //interface because we have tests
 }
 
 func NewHandler(s StorageInterface) *Handler {
-	return &Handler{storage: s}
+	return &Handler{storage: s}	//classic constructor
 }
 
-type Request struct {
+type Request struct {	//structure of our request
 	WalletID      string `json:"walletId"`
 	OperationType string `json:"operationType"`
 	Amount        int64  `json:"amount"`
 }
 
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
-	r.POST("/api/v1/wallet", h.updateWallet)
-	r.GET("/api/v1/wallets/:id", h.getWallet)
+	r.POST("/api/v1/wallet", h.updateWallet) //realises wallet update
+	r.GET("/api/v1/wallets/:id", h.getWallet)//getting wallet from db or cache
 }
 
-func (h *Handler) updateWallet(c *gin.Context) {
+func (h *Handler) updateWallet(c *gin.Context) { //func to update wallet xd
 	var req Request
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(400, gin.H{"error": "bad request"})
+	if err := c.BindJSON(&req); err != nil { //creating request and parsing from json
+		c.JSON(400, gin.H{"error": "bad request"}) //if error of parsing, bad request
 		return
 	}
 
-	if req.Amount <= 0 {
+	if req.Amount <= 0 { //if amount of transaction negative or 0, error
 		c.JSON(400, gin.H{"error": "amount must be positive"})
 		return
 	}
 
-	var wallet *Wallet
-	var err error
+	var wallet *Wallet //create wallet struct for handle
+	var err error //also error
 
-	if req.OperationType == "DEPOSIT" {
+	if req.OperationType == "DEPOSIT" { //chose operation type
 		wallet, err = h.storage.Deposit(req.WalletID, req.Amount)
 	} else if req.OperationType == "WITHDRAW" {
 		wallet, err = h.storage.Withdraw(req.WalletID, req.Amount)
 	} else {
-		c.JSON(400, gin.H{"error": "unknown operation"})
+		c.JSON(400, gin.H{"error": "unknown operation"}) //if request type unknown, error
 		return
 	}
 
@@ -56,29 +56,29 @@ func (h *Handler) updateWallet(c *gin.Context) {
 		return
 	}
 
-	walletCache.Store(wallet.ID, wallet)
+	walletCache.Store(wallet.ID, wallet) //update cache
 
-	c.JSON(200, wallet)
+	c.JSON(200, wallet) //show updated wallet
 }
 
-func (h *Handler) getWallet(c *gin.Context) {
-	id := c.Param("id")
+func (h *Handler) getWallet(c *gin.Context) { //getting wallet, i love it
+	id := c.Param("id") //getting id from context
 
-	if v, ok := walletCache.Load(id); ok {
-		c.JSON(200, v)
+	if v, ok := walletCache.Load(id); ok { //load wallet from cache
+		c.JSON(200, v) //if exists, return from cache
 		return
 	}
 
-	wallet, err := h.storage.Get(id)
-	if err != nil {
-		if err.Error() == "wallet not found" {
-			c.JSON(404, gin.H{"error": "wallet not found"})
+	wallet, err := h.storage.Get(id) //if in cache not found, get from db
+	if err != nil { //got error
+		if err.Error() == "wallet not found" { //if error of not existed wallet
+			c.JSON(404, gin.H{"error": "wallet not found"}) //return 404
 			return
 		}
-		c.JSON(500, gin.H{"error": "internal error"})
+		c.JSON(500, gin.H{"error": "internal error"}) //else this error in db may be
 		return
 	}
 
-	walletCache.Store(id, wallet)
-	c.JSON(200, wallet)
+	walletCache.Store(id, wallet) //add wallet to cache
+	c.JSON(200, wallet) //return wallet
 }

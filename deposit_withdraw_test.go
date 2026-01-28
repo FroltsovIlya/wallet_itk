@@ -8,7 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
-
+ //all these tests like for in Get()
 func TestRequest_BadRequest(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
