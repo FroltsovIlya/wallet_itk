@@ -94,12 +94,17 @@ func (s *Storage) Get(id string) (*Wallet, error) {
 		id,
 	).Scan(&w.ID, &w.Amount)
 
+	if err == sql.ErrNoRows {
+		return nil, errors.New("wallet not found")
+	}
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("db error: %w", err)
 	}
 
 	return &w, nil
 }
+
 
 func (s *Storage) Deposit(id string, amount int64) (*Wallet, error) {
 	var w Wallet

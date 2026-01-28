@@ -1,8 +1,12 @@
 package main
 
 import (
+	"sync"
+
 	"github.com/gin-gonic/gin"
 )
+
+var walletCache sync.Map
 
 type Handler struct {
 	storage StorageInterface
@@ -36,7 +40,7 @@ func (h *Handler) updateWallet(c *gin.Context) {
 	}
 
 	var wallet *Wallet
-	var err    error
+	var err error
 
 	if req.OperationType == "DEPOSIT" {
 		wallet, err = h.storage.Deposit(req.WalletID, req.Amount)
@@ -52,17 +56,29 @@ func (h *Handler) updateWallet(c *gin.Context) {
 		return
 	}
 
+	walletCache.Store(wallet.ID, wallet)
+
 	c.JSON(200, wallet)
 }
 
 func (h *Handler) getWallet(c *gin.Context) {
 	id := c.Param("id")
 
-	wallet, err := h.storage.Get(id)
-	if err != nil {
-		c.JSON(404, gin.H{"error": "wallet not found"})
+	if v, ok := walletCache.Load(id); ok {
+		c.JSON(200, v)
 		return
 	}
 
+	wallet, err := h.storage.Get(id)
+	if err != nil {
+		if err.Error() == "wallet not found" {
+			c.JSON(404, gin.H{"error": "wallet not found"})
+			return
+		}
+		c.JSON(500, gin.H{"error": "internal error"})
+		return
+	}
+
+	walletCache.Store(id, wallet)
 	c.JSON(200, wallet)
 }
